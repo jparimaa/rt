@@ -15,6 +15,7 @@ target_compile_features(${EXE_NAME} PUBLIC cxx_std_11)
 target_include_directories(${EXE_NAME}
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
 )
 
 if(MSVC)
