@@ -1,0 +1,10 @@
+build/
+*.o
+*.d
+*.spv
+*.a
+*.sh
+out
+core
+vgcore*
+imgui.ini
