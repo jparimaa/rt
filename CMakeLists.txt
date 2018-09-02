@@ -11,11 +11,13 @@ set(EXE_NAME rt-weekend1)
 add_executable(${EXE_NAME} ${SOURCES})
 
 target_compile_features(${EXE_NAME} PUBLIC cxx_std_11)
+target_compile_definitions(${EXE_NAME} PUBLIC -D_CRT_SECURE_NO_WARNINGS)
 
 target_include_directories(${EXE_NAME}
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
 )
 
 if(MSVC)
