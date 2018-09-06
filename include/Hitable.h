@@ -4,15 +4,18 @@
 
 #include <glm/glm.hpp>
 
-struct HitRecord
+class Material;
+
+struct Hit
 {
     float t;
     glm::vec3 p;
     glm::vec3 normal;
+    Material* material;
 };
 
 class Hitable
 {
 public:
-    virtual bool hit(const Ray& r, float min, float max, HitRecord& record) const = 0;
+    virtual bool hit(const Ray& r, float min, float max, Hit& hit) const = 0;
 };

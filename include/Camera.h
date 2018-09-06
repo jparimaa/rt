@@ -7,7 +7,6 @@
 class Camera
 {
 public:
-    Camera();
     Ray getRay(float u, float v) const;
 
 private:

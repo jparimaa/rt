@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(rt-weekend VERSION 0.0.1 LANGUAGES CXX)
+project(rt VERSION 0.0.1 LANGUAGES CXX)
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "64bit is required")
@@ -7,7 +7,7 @@ endif()
 
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
 
-set(EXE_NAME rt-weekend1)
+set(EXE_NAME rt1)
 add_executable(${EXE_NAME} ${SOURCES})
 
 target_compile_features(${EXE_NAME} PUBLIC cxx_std_11)
