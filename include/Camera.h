@@ -8,7 +8,7 @@ class Camera
 {
 public:
     Camera();
-    Ray getRay(float u, float v);
+    Ray getRay(float u, float v) const;
 
 private:
     glm::vec3 m_origin = {0.0f, 0.0f, 0.0f};

@@ -1,22 +1,22 @@
 #include "Ray.h"
 
-Ray::Ray(const glm::vec3& a, const glm::vec3& b) :
-    m_A(a),
-    m_B(b)
+Ray::Ray(const glm::vec3& origin, const glm::vec3& direction) :
+    m_origin(origin),
+    m_direction(direction)
 {
 }
 
 glm::vec3 Ray::origin() const
 {
-    return m_A;
+    return m_origin;
 }
 
 glm::vec3 Ray::direction() const
 {
-    return m_B;
+    return m_direction;
 }
 
 glm::vec3 Ray::pointAt(float t) const
 {
-    return m_A + t * m_B;
+    return m_origin + t * m_direction;
 }
