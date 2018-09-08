@@ -19,7 +19,7 @@
 const int c_width = 400;
 const int c_height = 200;
 const int c_numSamples = 100;
-const int c_maxDepth = 100;
+const int c_maxDepth = 25;
 const float c_maxDistance = std::numeric_limits<float>::max();
 
 std::default_random_engine g_random;
@@ -39,7 +39,7 @@ glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
         }
         else
         {
-            return glm::vec3(0.0f, 1.0f, 0.0f);
+            return glm::vec3(0.0f, 0.0f, 0.0f);
         }
     }
     else
@@ -82,14 +82,14 @@ int main()
     Lambertian red(glm::vec3(0.8f, 0.3f, 0.3f));
     Lambertian lime(glm::vec3(0.8f, 0.8f, 0.3f));
     Lambertian blue(glm::vec3(0.3f, 0.3f, 1.0f));
-    Metal orange(glm::vec3(0.8f, 0.6f, 0.2f));
-    Metal grey(glm::vec3(0.8f, 0.8f, 0.8f));
+    Metal orange(glm::vec3(0.8f, 0.6f, 0.2f), 0.2f);
+    Metal grey(glm::vec3(0.8f, 0.8f, 0.8f), 0.7f);
     Lambertian pureWhite(glm::vec3(1.0f));
 
     HitableList world;
     world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, &red);
     world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, &pureWhite);
-    world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, &blue);
+    world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, &orange);
     world.addHitable<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, &grey);
 
     int counter = 0;

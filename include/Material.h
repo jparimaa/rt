@@ -24,9 +24,10 @@ private:
 class Metal : public Material
 {
 public:
-    Metal(glm::vec3 albedo);
+    Metal(glm::vec3 albedo, float fuzziness);
     virtual bool scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& scattered) const;
 
 private:
     glm::vec3 m_albedo;
+    float m_fuzziness = 0.0f;
 };
