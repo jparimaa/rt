@@ -21,10 +21,10 @@ private:
     glm::vec3 m_albedo;
 };
 
-class Metal : public Material
+class Reflective : public Material
 {
 public:
-    Metal(glm::vec3 albedo, float fuzziness);
+    Reflective(glm::vec3 albedo, float fuzziness);
     virtual bool scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const;
 
 private:
@@ -32,10 +32,10 @@ private:
     float m_fuzziness = 0.0f;
 };
 
-class Transparent : public Material
+class Refractive : public Material
 {
 public:
-    Transparent(float refractionIndex);
+    Refractive(float refractionIndex);
     virtual bool scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const;
 
 private:

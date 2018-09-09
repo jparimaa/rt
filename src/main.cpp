@@ -82,17 +82,17 @@ int main()
     Lambertian red(glm::vec3(0.8f, 0.3f, 0.3f));
     Lambertian lime(glm::vec3(0.8f, 0.8f, 0.3f));
     Lambertian blue(glm::vec3(0.3f, 0.3f, 1.0f));
-    Metal orange(glm::vec3(0.8f, 0.6f, 0.2f), 0.2f);
-    Metal grey(glm::vec3(0.8f, 0.8f, 0.8f), 0.4f);
+    Reflective orange(glm::vec3(0.8f, 0.6f, 0.2f), 0.2f);
+    Reflective grey(glm::vec3(0.8f, 0.8f, 0.8f), 0.4f);
     Lambertian pureWhite(glm::vec3(1.0f));
-    Transparent transparent(1.5f);
+    Refractive water(1.5f);
 
     HitableList world;
     world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, &red);
     world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, &orange);
     world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, &blue);
-    world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -0.6f), 0.15f, &transparent);
-    world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -0.6f), 0.15f, &transparent);
+    world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -0.6f), 0.15f, &water);
+    world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -0.6f), 0.15f, &water);
     world.addHitable<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, &grey);
 
     int counter = 0;
@@ -121,7 +121,7 @@ int main()
 
         if ((i % percentageModulo) == 0)
         {
-            std::cout << (float(c_height - i) / float(c_height) * 100.0f) << "% ";
+            std::cout << "\r" << (float(c_height - i) / float(c_height) * 100.0f) << "%" << std::flush;
         }
     }
 

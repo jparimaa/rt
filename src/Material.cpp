@@ -14,13 +14,13 @@ bool Lambertian::scatter(const Ray& /*incoming*/, const Hit& hit, glm::vec3& att
     return true;
 }
 
-Metal::Metal(glm::vec3 albedo, float fuzziness) :
+Reflective::Reflective(glm::vec3 albedo, float fuzziness) :
     m_albedo(albedo),
     m_fuzziness(fuzziness)
 {
 }
 
-bool Metal::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const
+bool Reflective::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const
 {
     glm::vec3 reflected = glm::reflect(glm::normalize(incoming.direction()), hit.normal);
     outgoing = Ray(hit.p, reflected + m_fuzziness * randomInUnitSphere());
@@ -28,12 +28,12 @@ bool Metal::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation,
     return glm::dot(outgoing.direction(), hit.normal) > 0.0f;
 }
 
-Transparent::Transparent(float refractionIndex) :
+Refractive::Refractive(float refractionIndex) :
     m_refractionIndex(refractionIndex)
 {
 }
 
-bool Transparent::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const
+bool Refractive::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const
 {
     // Transparent objects do not cause attenuation
     attenuation = glm::vec3(1.0, 1.0, 1.0);
