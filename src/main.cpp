@@ -9,6 +9,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include <string>
 #include <cmath>
@@ -19,12 +20,11 @@
 const int c_width = 400;
 const int c_height = 200;
 const int c_numSamples = 100;
-const int c_maxDepth = 30;
+const int c_maxDepth = 25;
 const float c_maxDistance = std::numeric_limits<float>::max();
 
 std::default_random_engine g_random;
 std::uniform_real_distribution<float> g_distribution(0.0, 1.0);
-const Camera g_camera;
 
 glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
 {
@@ -88,12 +88,19 @@ int main()
     Refractive water(1.5f);
 
     HitableList world;
-    world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, &red);
-    world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, &orange);
-    world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, &blue);
-    world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -0.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -0.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, &grey);
+    world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -4.0f), 0.5f, &red);
+    world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -4.0f), 100.0f, &orange);
+    world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -4.0f), 0.5f, &blue);
+    world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
+    world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
+    world.addHitable<Sphere>(glm::vec3(-1.0f, 0.0f, -4.0f), 0.5f, &grey);
+
+    glm::vec3 position(0.0f, 2.0f, 0.0f);
+    glm::vec3 lookAt(0.0f, 0.0f, -4.0f);
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+    float fov = glm::half_pi<float>() / 2.0f;
+    float aspectRatio = c_width / c_height;
+    const Camera camera(position, lookAt, worldUp, fov, aspectRatio);
 
     int counter = 0;
     for (int i = c_height - 1; i >= 0; --i)
@@ -105,7 +112,7 @@ int main()
             {
                 float u = float(j + g_distribution(g_random)) / float(c_width);
                 float v = float(i + g_distribution(g_random)) / float(c_height);
-                Ray ray = g_camera.getRay(u, v);
+                Ray ray = camera.getRay(u, v);
 
                 output += calculateColor(ray, world, 0);
                 //output += visualizeNormals(ray, world);
