@@ -16,11 +16,12 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <thread>
 
 const int c_width = 400;
 const int c_height = 200;
 const int c_numSamples = 100;
-const int c_maxDepth = 25;
+const int c_maxDepth = 50;
 const float c_maxDistance = std::numeric_limits<float>::max();
 
 std::default_random_engine g_random;
@@ -64,21 +65,8 @@ glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
     }
 }
 
-int main()
+void executeSection(int start, int end, uint8_t* imageData)
 {
-    int percentageInterval = 10;
-    int percentageModulo = c_height / percentageInterval;
-
-    std::string fileName = "output.png";
-
-    uint8_t* imageData = (uint8_t*)malloc(c_width * c_height * 3);
-
-    auto startTime = std::chrono::high_resolution_clock::now();
-    std::cout << "Samples " << c_numSamples << "\nMax depth " << c_maxDepth << "\n";
-    std::cout << "Started running...\n";
-
-    glm::vec3 s = glm::sqrt(glm::vec3(0.49f, 0.25f, 0.9f));
-
     Lambertian red(glm::vec3(0.8f, 0.3f, 0.3f));
     Lambertian lime(glm::vec3(0.8f, 0.8f, 0.3f));
     Lambertian blue(glm::vec3(0.3f, 0.3f, 1.0f));
@@ -102,8 +90,11 @@ int main()
     float aspectRatio = c_width / c_height;
     const Camera camera(position, lookAt, worldUp, fov, aspectRatio);
 
-    int counter = 0;
-    for (int i = c_height - 1; i >= 0; --i)
+    int counter = start * c_width * 3;
+    int startHeight = c_height - 1 - start;
+    int endHeight = c_height - end;
+
+    for (int i = startHeight; i >= endHeight; --i)
     {
         for (int j = 0; j < c_width; ++j)
         {
@@ -125,22 +116,48 @@ int main()
             imageData[counter++] = uint8_t(output.g);
             imageData[counter++] = uint8_t(output.b);
         }
+    }
+}
 
-        if ((i % percentageModulo) == 0)
-        {
-            std::cout << "\r" << (float(c_height - i) / float(c_height) * 100.0f) << "%" << std::flush;
-        }
+int main()
+{
+    int totalImageSize = c_width * c_height * 3;
+    std::cout << "Total image size " << totalImageSize << "\n";
+    uint8_t* imageData = (uint8_t*)malloc(totalImageSize);
+
+    const int numThreads = 8;
+    int remainder = c_height % numThreads;
+    int heightPerThread = c_height / numThreads;
+    std::cout << "Threads " << numThreads << "\n"
+              << "Height per thread " << heightPerThread << "\n"
+              << "Remainder " << remainder << "\n";
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < numThreads; ++i)
+    {
+        int start = i * heightPerThread;
+        int end = (i + 1) * heightPerThread;
+        end = i == (numThreads - 1) ? end + remainder : end;
+        std::cout << "Thread " << i << " [" << start << " " << end << "] " << (start * c_width * 3) << "\n";
+        threads.push_back(std::thread(executeSection, start, end, imageData));
     }
 
-    std::cout << "\n";
+    auto startTime = std::chrono::high_resolution_clock::now();
+    std::cout << "Samples " << c_numSamples << "\nMax depth " << c_maxDepth << "\n";
+    std::cout << "Started running...\n";
+
+    for (std::thread& t : threads)
+    {
+        t.join();
+    }
 
     auto endTime = std::chrono::high_resolution_clock::now();
     auto time = endTime - startTime;
     std::cout << "Execution time " << std::chrono::duration_cast<std::chrono::seconds>(time).count() << " seconds\n";
 
-    std::cout << "Wrote file " << fileName << "\n";
-
+    std::string fileName = "output.png";
     stbi_write_png(fileName.c_str(), c_width, c_height, 3, (void*)imageData, 0);
+    std::cout << "Wrote file " << fileName << "\n";
 
     free((void*)imageData);
 
