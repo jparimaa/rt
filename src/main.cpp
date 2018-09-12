@@ -22,6 +22,8 @@ const int c_width = 400;
 const int c_height = 200;
 const int c_numSamples = 100;
 const int c_maxDepth = 50;
+const int c_numThreads = 8;
+const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
 
 std::default_random_engine g_random;
@@ -78,17 +80,19 @@ void executeSection(int start, int end, uint8_t* imageData)
     HitableList world;
     world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -4.0f), 0.5f, &red);
     world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -4.0f), 100.0f, &orange);
-    world.addHitable<Sphere>(glm::vec3(1.0f, 0.0f, -4.0f), 0.5f, &blue);
-    world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-1.0f, 0.0f, -4.0f), 0.5f, &grey);
+    world.addHitable<Sphere>(glm::vec3(0.7f, 0.0f, -3.0f), 0.5f, &blue);
+    //world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
+    //world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
+    world.addHitable<Sphere>(glm::vec3(-0.7f, 0.0f, -5.0f), 0.5f, &grey);
 
     glm::vec3 position(0.0f, 2.0f, 0.0f);
     glm::vec3 lookAt(0.0f, 0.0f, -4.0f);
     glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
     float fov = glm::half_pi<float>() / 2.0f;
     float aspectRatio = c_width / c_height;
-    const Camera camera(position, lookAt, worldUp, fov, aspectRatio);
+    float aperture = 1.0f;
+    float focusDistance = glm::distance(lookAt, position);
+    const Camera camera(position, lookAt, worldUp, fov, aspectRatio, aperture, focusDistance);
 
     int counter = start * c_width * 3;
     int startHeight = c_height - 1 - start;
@@ -121,30 +125,25 @@ void executeSection(int start, int end, uint8_t* imageData)
 
 int main()
 {
-    int totalImageSize = c_width * c_height * 3;
-    std::cout << "Total image size " << totalImageSize << "\n";
-    uint8_t* imageData = (uint8_t*)malloc(totalImageSize);
+    std::cout << "Total image size " << (c_totalImageSize / 1000) << " kb\n"
+              << "Threads " << c_numThreads << "\n"
+              << "Samples " << c_numSamples << "\n"
+              << "Max depth " << c_maxDepth << "\n"
+              << "Started running...\n";
 
-    const int numThreads = 8;
-    int remainder = c_height % numThreads;
-    int heightPerThread = c_height / numThreads;
-    std::cout << "Threads " << numThreads << "\n"
-              << "Height per thread " << heightPerThread << "\n"
-              << "Remainder " << remainder << "\n";
+    auto startTime = std::chrono::high_resolution_clock::now();
+    uint8_t* imageData = (uint8_t*)malloc(c_totalImageSize);
 
+    int remainder = c_height % c_numThreads;
+    int heightPerThread = c_height / c_numThreads;
     std::vector<std::thread> threads;
-    for (int i = 0; i < numThreads; ++i)
+    for (int i = 0; i < c_numThreads; ++i)
     {
         int start = i * heightPerThread;
         int end = (i + 1) * heightPerThread;
-        end = i == (numThreads - 1) ? end + remainder : end;
-        std::cout << "Thread " << i << " [" << start << " " << end << "] " << (start * c_width * 3) << "\n";
+        end = i == (c_numThreads - 1) ? end + remainder : end;
         threads.push_back(std::thread(executeSection, start, end, imageData));
     }
-
-    auto startTime = std::chrono::high_resolution_clock::now();
-    std::cout << "Samples " << c_numSamples << "\nMax depth " << c_maxDepth << "\n";
-    std::cout << "Started running...\n";
 
     for (std::thread& t : threads)
     {
