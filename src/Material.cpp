@@ -53,15 +53,15 @@ bool Refractive::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenua
         refractionRatio = airRefractionIndex / m_refractionIndex;
     }
 
-    auto refract = [](const glm::vec3& íncoming, const glm::vec3& n, float refractionRatio, glm::vec3& outgoing) {
+    auto refract = [](const glm::vec3& incoming, const glm::vec3& n, float refractionRatio, glm::vec3& outgoing) {
         // https: //en.wikipedia.org/wiki/Snell%27s_law#Vector_form
-        glm::vec3 l = glm::normalize(íncoming);
+        glm::vec3 l = glm::normalize(incoming);
         float r = refractionRatio;
         float c = glm::dot(l, n);
         float discriminant = 1.0f - r * r * (1.0f - c * c);
         if (discriminant > 0.0f)
         {
-            outgoing = (r * l) - ((r * c) + sqrt(discriminant)) * n;
+            outgoing = (r * l) - ((r * c) + static_cast<float>(sqrt(discriminant))) * n;
             return true;
         }
         return false;

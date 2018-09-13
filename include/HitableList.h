@@ -8,7 +8,7 @@
 class HitableList : public Hitable
 {
 public:
-    ~HitableList();
+    virtual ~HitableList();
     virtual bool hit(const Ray& r, float min, float max, Hit& hit) const;
 
     template<typename T, typename... Args>

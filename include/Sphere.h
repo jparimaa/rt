@@ -9,6 +9,7 @@ class Sphere : public Hitable
 {
 public:
     Sphere(glm::vec3 center, float radius, Material* material);
+    virtual ~Sphere() {};
 
     virtual bool hit(const Ray& ray, float min, float max, Hit& hit) const;
 

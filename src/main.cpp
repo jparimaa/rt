@@ -74,16 +74,17 @@ void executeSection(int start, int end, uint8_t* imageData)
     Lambertian blue(glm::vec3(0.3f, 0.3f, 1.0f));
     Reflective orange(glm::vec3(0.8f, 0.6f, 0.2f), 0.2f);
     Reflective grey(glm::vec3(0.8f, 0.8f, 0.8f), 0.4f);
+    Reflective pink(glm::vec3(0.8f, 0.2f, 0.8f), 0.4f);
     Lambertian pureWhite(glm::vec3(1.0f));
     Refractive water(1.5f);
 
     HitableList world;
     world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -4.0f), 0.5f, &red);
     world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -4.0f), 100.0f, &orange);
-    world.addHitable<Sphere>(glm::vec3(0.7f, 0.0f, -3.0f), 0.5f, &blue);
+    world.addHitable<Sphere>(glm::vec3(0.9f, 0.0f, -3.0f), 0.5f, &pink);
     //world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
     //world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-0.7f, 0.0f, -5.0f), 0.5f, &grey);
+    world.addHitable<Sphere>(glm::vec3(-0.9f, 0.0f, -5.0f), 0.5f, &grey);
 
     glm::vec3 position(0.0f, 2.0f, 0.0f);
     glm::vec3 lookAt(0.0f, 0.0f, -4.0f);

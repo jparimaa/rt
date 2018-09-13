@@ -20,8 +20,11 @@ target_include_directories(${EXE_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
 )
 
+FIND_PACKAGE(Threads)
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${CMAKE_THREAD_LIBS_INIT})
+
 if(MSVC)
     target_compile_options(${EXE_NAME} PRIVATE /W3 /WX /MP)
 else()
-    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra -Werror)
 endif()

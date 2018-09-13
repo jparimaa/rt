@@ -8,3 +8,7 @@ out
 core
 vgcore*
 imgui.ini
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
