@@ -17,14 +17,17 @@
 #include <chrono>
 #include <random>
 #include <thread>
+#include <unordered_map>
 
 const int c_width = 400;
 const int c_height = 200;
-const int c_numSamples = 100;
-const int c_maxDepth = 50;
-const int c_numThreads = 8;
+const int c_numSamples = 200;
+const int c_maxDepth = 100;
+const int c_numThreads = 6;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
+
+std::unordered_map<std::thread::id, int> g_progress;
 
 std::default_random_engine g_random;
 std::uniform_real_distribution<float> g_distribution(0.0, 1.0);
@@ -79,15 +82,15 @@ void executeSection(int start, int end, uint8_t* imageData)
     Refractive water(1.5f);
 
     HitableList world;
-    world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -4.0f), 0.5f, &red);
-    world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -4.0f), 100.0f, &orange);
-    world.addHitable<Sphere>(glm::vec3(0.9f, 0.0f, -3.0f), 0.5f, &pink);
+    world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -10.0f), 0.5f, &red);
+    world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -10.0f), 100.0f, &orange);
+    world.addHitable<Sphere>(glm::vec3(0.7f, 0.0f, -7.0f), 0.5f, &blue);
     //world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
     //world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-0.9f, 0.0f, -5.0f), 0.5f, &grey);
+    world.addHitable<Sphere>(glm::vec3(-0.7f, 0.0f, -13.0f), 0.5f, &grey);
 
     glm::vec3 position(0.0f, 2.0f, 0.0f);
-    glm::vec3 lookAt(0.0f, 0.0f, -4.0f);
+    glm::vec3 lookAt(0.0f, 0.0f, -10.0f);
     glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
     float fov = glm::half_pi<float>() / 2.0f;
     float aspectRatio = c_width / c_height;
@@ -98,9 +101,11 @@ void executeSection(int start, int end, uint8_t* imageData)
     int counter = start * c_width * 3;
     int startHeight = c_height - 1 - start;
     int endHeight = c_height - end;
+    int progressCounter = 0;
 
     for (int i = startHeight; i >= endHeight; --i)
     {
+        ++g_progress[std::this_thread::get_id()];
         for (int j = 0; j < c_width; ++j)
         {
             glm::vec3 output(0.0f);
@@ -145,6 +150,28 @@ int main()
         end = i == (c_numThreads - 1) ? end + remainder : end;
         threads.push_back(std::thread(executeSection, start, end, imageData));
     }
+
+    const int totalProgress = c_height;
+    int currentProgress = 0;
+    while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        for (auto& kv : g_progress)
+        {
+            currentProgress += kv.second;
+        }
+
+        float percentage = static_cast<float>(currentProgress) / static_cast<float>(totalProgress);
+        std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "%" << std::flush;
+
+        if (currentProgress == totalProgress)
+        {
+            break;
+        }
+
+        currentProgress = 0;
+    }
+    std::cout << "\n";
 
     for (std::thread& t : threads)
     {
