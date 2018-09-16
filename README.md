@@ -1,4 +1,4 @@
-# rt-weekend
+# rt
 
 A small demo for ray-tracing.
 
