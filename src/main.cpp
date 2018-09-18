@@ -18,22 +18,119 @@
 #include <random>
 #include <thread>
 #include <unordered_map>
+#include <utility>
+#include <memory>
 
-const int c_width = 600;
-const int c_height = 400;
-const int c_numSamples = 30;
-const int c_maxDepth = 5;
+enum class MaterialType
+{
+    Lambertian,
+    Refractive,
+    Reflective,
+};
+
+struct SphereData
+{
+    glm::vec3 position;
+    float radius;
+    MaterialType type;
+    glm::vec3 color;
+    float fuzziness;
+    float refractionIndex;
+};
+
+const int c_width = 640;
+const int c_height = 480;
+const int c_numSamples = 150;
+const int c_maxDepth = 50;
 const int c_numThreads = 4;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
-const glm::vec3 c_position(0.0f, 2.5f, 9.0f);
-const glm::vec3 c_lookAt(0.0f, 0.0f, 0.0f);
+const glm::vec3 c_position(0.0f, 2.5f, 0.0f);
+const glm::vec3 c_lookAt(0.0f, 0.0f, -10.0f);
 const glm::vec3 c_worldUp(0.0f, 1.0f, 0.0f);
+const float c_fov = glm::half_pi<float>() / 2.0f;
+const float c_aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
+const float c_aperture = 0.15f;
+const float c_focusDistance = glm::distance(c_lookAt, c_position);
+const Camera c_camera(c_position, c_lookAt, c_worldUp, c_fov, c_aspectRatio, c_aperture, c_focusDistance);
+const int c_numBalls = 300;
 
 std::unordered_map<std::thread::id, int> g_progress;
 
 std::default_random_engine g_random;
 std::uniform_real_distribution<float> g_distribution(0.0, 1.0);
+std::vector<SphereData> g_sphereDataset;
+
+void createSphereDataset()
+{
+    SphereData floor{
+        {0.0f, -1000.0f, -10.0f},
+        1000.0f,
+        MaterialType::Lambertian,
+        {0.8f, 0.8f, 0.8f},
+        0.0f,
+        0.0f};
+
+    SphereData red{
+        {-1.3f, 1.0f, -11.5f},
+        1.0f,
+        MaterialType::Lambertian,
+        {0.8f, 0.3f, 0.3f},
+        0.0f,
+        0.0f};
+
+    SphereData water{
+        {0.0f, 1.0f, -9.0f},
+        1.0f,
+        MaterialType::Refractive,
+        {0.0f, 0.0f, 0.0f},
+        0.0f,
+        1.5f};
+
+    SphereData metal{
+        {1.3f, 1.0f, -6.5f},
+        1.0f,
+        MaterialType::Reflective,
+        {0.7f, 0.6f, 0.5f},
+        0.15f,
+        0.0f};
+
+    g_sphereDataset.push_back(floor);
+    g_sphereDataset.push_back(red);
+    g_sphereDataset.push_back(water);
+    g_sphereDataset.push_back(metal);
+
+    for (int i = 0; i < c_numBalls; ++i)
+    {
+        MaterialType t;
+        float p = g_distribution(g_random);
+        if (p < 0.8f)
+        {
+            t = MaterialType::Lambertian;
+        }
+        else if (p < 0.95f)
+        {
+            t = MaterialType::Reflective;
+        }
+        else
+        {
+            t = MaterialType::Refractive;
+        }
+
+        float z = -1.0f - (g_distribution(g_random) * 20.0f);
+        float x = (g_distribution(g_random) - 0.5f) * z * tan(c_fov);
+
+        SphereData s{
+            {x, 0.2f, z},
+            0.2f,
+            MaterialType::Reflective,
+            {g_distribution(g_random), g_distribution(g_random), g_distribution(g_random)},
+            g_distribution(g_random),
+            g_distribution(g_random) * 2.0f};
+
+        g_sphereDataset.push_back(s);
+    }
+}
 
 glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
 {
@@ -75,22 +172,26 @@ glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
 
 void executeSection(int start, int end, uint8_t* imageData)
 {
-    Lambertian grey(glm::vec3(0.8f, 0.8f, 0.8f));
-    Lambertian red(glm::vec3(0.8f, 0.3f, 0.3f));
-    Refractive water(1.5f);
-    Reflective metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.4f);
-
     HitableList world;
-    world.addHitable<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, &grey);
-    world.addHitable<Sphere>(glm::vec3(-1.3f, 1.0f, -2.0f), 1.0f, &red);
-    world.addHitable<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, &water);
-    world.addHitable<Sphere>(glm::vec3(1.3f, 1.0f, 2.0f), 1.0f, &metal);
-
-    float fov = glm::half_pi<float>() / 2.0f;
-    float aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
-    float aperture = 0.6f;
-    float focusDistance = glm::distance(c_lookAt, c_position);
-    const Camera camera(c_position, c_lookAt, c_worldUp, fov, aspectRatio, aperture, focusDistance);
+    std::vector<std::unique_ptr<Material>> materials;
+    for (const SphereData& data : g_sphereDataset)
+    {
+        std::unique_ptr<Material> material;
+        if (data.type == MaterialType::Lambertian)
+        {
+            material.reset(new Lambertian(data.color));
+        }
+        else if (data.type == MaterialType::Reflective)
+        {
+            material.reset(new Reflective(data.color, data.fuzziness));
+        }
+        else
+        {
+            material.reset(new Refractive(data.refractionIndex));
+        }
+        materials.push_back(std::move(material));
+        world.addHitable<Sphere>(data.position, data.radius, materials.back().get());
+    }
 
     int counter = start * c_width * 3;
     int startHeight = c_height - 1 - start;
@@ -107,7 +208,7 @@ void executeSection(int start, int end, uint8_t* imageData)
             {
                 float u = float(j + g_distribution(g_random)) / float(c_width);
                 float v = float(i + g_distribution(g_random)) / float(c_height);
-                Ray ray = camera.getRay(u, v);
+                Ray ray = c_camera.getRay(u, v);
 
                 output += calculateColor(ray, world, 0);
                 //output += visualizeNormals(ray, world);
@@ -125,6 +226,8 @@ void executeSection(int start, int end, uint8_t* imageData)
 
 int main()
 {
+    createSphereDataset();
+
     std::cout << "Total image size " << (c_totalImageSize / 1000) << " kb\n"
               << "Threads " << c_numThreads << "\n"
               << "Samples " << c_numSamples << "\n"
@@ -149,14 +252,19 @@ int main()
     int currentProgress = 0;
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         for (auto& kv : g_progress)
         {
             currentProgress += kv.second;
         }
 
         float percentage = static_cast<float>(currentProgress) / static_cast<float>(totalProgress);
-        std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "%" << std::flush;
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto time = currentTime - startTime;
+        float secondsPassed = static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(time).count());
+        int eta = static_cast<int>(((1.0f / percentage) * secondsPassed) - secondsPassed);
+
+        std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "% completed, approximately " << eta << " seconds left " << std::flush;
 
         if (currentProgress == totalProgress)
         {
