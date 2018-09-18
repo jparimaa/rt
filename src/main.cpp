@@ -19,13 +19,16 @@
 #include <thread>
 #include <unordered_map>
 
-const int c_width = 400;
-const int c_height = 200;
-const int c_numSamples = 200;
-const int c_maxDepth = 100;
-const int c_numThreads = 6;
+const int c_width = 600;
+const int c_height = 400;
+const int c_numSamples = 30;
+const int c_maxDepth = 5;
+const int c_numThreads = 4;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
+const glm::vec3 c_position(0.0f, 2.5f, 9.0f);
+const glm::vec3 c_lookAt(0.0f, 0.0f, 0.0f);
+const glm::vec3 c_worldUp(0.0f, 1.0f, 0.0f);
 
 std::unordered_map<std::thread::id, int> g_progress;
 
@@ -72,31 +75,22 @@ glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
 
 void executeSection(int start, int end, uint8_t* imageData)
 {
+    Lambertian grey(glm::vec3(0.8f, 0.8f, 0.8f));
     Lambertian red(glm::vec3(0.8f, 0.3f, 0.3f));
-    Lambertian lime(glm::vec3(0.8f, 0.8f, 0.3f));
-    Lambertian blue(glm::vec3(0.3f, 0.3f, 1.0f));
-    Reflective orange(glm::vec3(0.8f, 0.6f, 0.2f), 0.2f);
-    Reflective grey(glm::vec3(0.8f, 0.8f, 0.8f), 0.4f);
-    Reflective pink(glm::vec3(0.8f, 0.2f, 0.8f), 0.4f);
-    Lambertian pureWhite(glm::vec3(1.0f));
     Refractive water(1.5f);
+    Reflective metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.4f);
 
     HitableList world;
-    world.addHitable<Sphere>(glm::vec3(0.0f, 0.0f, -10.0f), 0.5f, &red);
-    world.addHitable<Sphere>(glm::vec3(0.0f, -100.5f, -10.0f), 100.0f, &orange);
-    world.addHitable<Sphere>(glm::vec3(0.7f, 0.0f, -7.0f), 0.5f, &blue);
-    //world.addHitable<Sphere>(glm::vec3(0.35f, -0.3f, -3.6f), 0.15f, &water);
-    //world.addHitable<Sphere>(glm::vec3(-0.35f, -0.3f, -3.6f), 0.15f, &water);
-    world.addHitable<Sphere>(glm::vec3(-0.7f, 0.0f, -13.0f), 0.5f, &grey);
+    world.addHitable<Sphere>(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f, &grey);
+    world.addHitable<Sphere>(glm::vec3(-1.3f, 1.0f, -2.0f), 1.0f, &red);
+    world.addHitable<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, &water);
+    world.addHitable<Sphere>(glm::vec3(1.3f, 1.0f, 2.0f), 1.0f, &metal);
 
-    glm::vec3 position(0.0f, 2.0f, 0.0f);
-    glm::vec3 lookAt(0.0f, 0.0f, -10.0f);
-    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
     float fov = glm::half_pi<float>() / 2.0f;
-    float aspectRatio = c_width / c_height;
-    float aperture = 1.0f;
-    float focusDistance = glm::distance(lookAt, position);
-    const Camera camera(position, lookAt, worldUp, fov, aspectRatio, aperture, focusDistance);
+    float aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
+    float aperture = 0.6f;
+    float focusDistance = glm::distance(c_lookAt, c_position);
+    const Camera camera(c_position, c_lookAt, c_worldUp, fov, aspectRatio, aperture, focusDistance);
 
     int counter = start * c_width * 3;
     int startHeight = c_height - 1 - start;
