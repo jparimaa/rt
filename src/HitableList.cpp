@@ -24,3 +24,32 @@ bool HitableList::hit(const Ray& r, float min, float max, Hit& hit) const
     }
     return hitAnything;
 }
+
+bool HitableList::getBoundingBox(AABB& box)
+{
+    if (m_list.empty())
+    {
+        return false;
+    }
+    AABB tempBox;
+    bool validFirstBox = m_list[0]->getBoundingBox(tempBox);
+    if (!validFirstBox)
+    {
+        return false;
+    }
+
+    box = tempBox;
+
+    for (Hitable* hitable : m_list)
+    {
+        if (hitable->getBoundingBox(tempBox))
+        {
+            box = AABB(box, tempBox);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}

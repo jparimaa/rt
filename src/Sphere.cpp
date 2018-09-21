@@ -39,3 +39,9 @@ bool Sphere::hit(const Ray& ray, float min, float max, Hit& hit) const
     }
     return false;
 }
+
+bool Sphere::getBoundingBox(AABB& box)
+{
+    box = AABB(m_center - glm::vec3(m_radius), m_center + glm::vec3(m_radius));
+    return true;
+}
