@@ -5,6 +5,7 @@ A small demo for ray-tracing.
 - Different materials such as lambertian, reflective and refractive
 - Depth of field
 - Multi-threaded
+- Bounding volumen hierarchy with AABB
 
 ## Clone and build
 

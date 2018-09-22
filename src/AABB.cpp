@@ -23,7 +23,7 @@ AABB::AABB(const AABB& box1, const AABB& box2)
                       std::max(box1max.z, box2max.z));
 }
 
-bool AABB::hit(const Ray& ray, float tmin, float tmax)
+bool AABB::hit(const Ray& ray, float tmin, float tmax) const
 {
     for (int a = 0; a < 3; ++a)
     {

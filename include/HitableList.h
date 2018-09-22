@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hitable.h"
+#include "AABB.h"
 #include "Ray.h"
 
 #include <vector>

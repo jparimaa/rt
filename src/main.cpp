@@ -5,6 +5,7 @@
 #include "Sphere.h"
 #include "Common.h"
 #include "Material.h"
+#include "BVHNode.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -172,8 +173,9 @@ glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
 
 void executeSection(int start, int end, uint8_t* imageData)
 {
-    HitableList world;
     std::vector<std::unique_ptr<Material>> materials;
+    std::vector<std::unique_ptr<Sphere>> spheres;
+    std::vector<Hitable*> hitables;
     for (const SphereData& data : g_sphereDataset)
     {
         std::unique_ptr<Material> material;
@@ -190,8 +192,12 @@ void executeSection(int start, int end, uint8_t* imageData)
             material.reset(new Refractive(data.refractionIndex));
         }
         materials.push_back(std::move(material));
-        world.addHitable<Sphere>(data.position, data.radius, materials.back().get());
+        std::unique_ptr<Sphere> sphere(new Sphere(data.position, data.radius, materials.back().get()));
+        spheres.push_back(std::move(sphere));
+        hitables.push_back(spheres.back().get());
     }
+
+    BVHNode world(hitables);
 
     int counter = start * c_width * 3;
     int startHeight = c_height - 1 - start;
