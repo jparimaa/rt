@@ -42,7 +42,7 @@ struct SphereData
 const int c_width = 640;
 const int c_height = 480;
 const int c_numSamples = 150;
-const int c_maxDepth = 50;
+const int c_maxDepth = 10;
 const int c_numThreads = 4;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
@@ -51,7 +51,7 @@ const glm::vec3 c_lookAt(0.0f, 0.0f, -10.0f);
 const glm::vec3 c_worldUp(0.0f, 1.0f, 0.0f);
 const float c_fov = glm::half_pi<float>() / 2.0f;
 const float c_aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
-const float c_aperture = 0.15f;
+const float c_aperture = 0.10f;
 const float c_focusDistance = glm::distance(c_lookAt, c_position);
 const Camera c_camera(c_position, c_lookAt, c_worldUp, c_fov, c_aspectRatio, c_aperture, c_focusDistance);
 const int c_numBalls = 300;
@@ -105,11 +105,11 @@ void createSphereDataset()
     {
         MaterialType t;
         float p = g_distribution(g_random);
-        if (p < 0.8f)
+        if (p < 0.4f)
         {
             t = MaterialType::Lambertian;
         }
-        else if (p < 0.95f)
+        else if (p < 0.8f)
         {
             t = MaterialType::Reflective;
         }
@@ -124,7 +124,7 @@ void createSphereDataset()
         SphereData s{
             {x, 0.2f, z},
             0.2f,
-            MaterialType::Reflective,
+            t,
             {g_distribution(g_random), g_distribution(g_random), g_distribution(g_random)},
             g_distribution(g_random),
             g_distribution(g_random) * 2.0f};
@@ -146,7 +146,7 @@ glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
         }
         else
         {
-            return glm::vec3(0.0f, 0.0f, 0.0f);
+            return glm::vec3(1.0f, 0.0f, 0.0f);
         }
     }
     else
