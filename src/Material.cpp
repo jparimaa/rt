@@ -25,7 +25,7 @@ bool Reflective::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenua
     glm::vec3 reflected = glm::reflect(glm::normalize(incoming.direction()), hit.normal);
     outgoing = Ray(hit.p, reflected + m_fuzziness * randomInUnitSphere());
     attenuation = m_albedo;
-    return glm::dot(outgoing.direction(), hit.normal) > 0.0f;
+    return glm::dot(outgoing.direction(), hit.normal) > (0.0f - std::numeric_limits<float>::epsilon());
 }
 
 Refractive::Refractive(float refractionIndex) :
@@ -71,12 +71,11 @@ bool Refractive::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenua
     if (refract(incoming.direction(), outwardNormal, refractionRatio, refracted))
     {
         outgoing = Ray(hit.p, refracted);
-        return true;
     }
     else
     {
         glm::vec3 reflected = glm::reflect(glm::normalize(incoming.direction()), hit.normal);
         outgoing = Ray(hit.p, reflected);
-        return false;
     }
+    return true;
 }

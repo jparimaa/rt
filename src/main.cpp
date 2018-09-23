@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <utility>
 #include <memory>
+#include <atomic>
 
 enum class MaterialType
 {
@@ -42,7 +43,7 @@ struct SphereData
 const int c_width = 640;
 const int c_height = 480;
 const int c_numSamples = 150;
-const int c_maxDepth = 10;
+const int c_maxDepth = 25;
 const int c_numThreads = 4;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
@@ -56,6 +57,7 @@ const float c_focusDistance = glm::distance(c_lookAt, c_position);
 const Camera c_camera(c_position, c_lookAt, c_worldUp, c_fov, c_aspectRatio, c_aperture, c_focusDistance);
 const int c_numBalls = 300;
 
+std::atomic<int> g_threadsRunning = 0;
 std::unordered_map<std::thread::id, int> g_progress;
 
 std::default_random_engine g_random;
@@ -93,7 +95,7 @@ void createSphereDataset()
         1.0f,
         MaterialType::Reflective,
         {0.7f, 0.6f, 0.5f},
-        0.15f,
+        0.0f,
         0.0f};
 
     g_sphereDataset.push_back(floor);
@@ -146,7 +148,7 @@ glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
         }
         else
         {
-            return glm::vec3(1.0f, 0.0f, 0.0f);
+            return glm::vec3(0.0f);
         }
     }
     else
@@ -173,6 +175,7 @@ glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
 
 void executeSection(int start, int end, uint8_t* imageData)
 {
+    ++g_threadsRunning;
     std::vector<std::unique_ptr<Material>> materials;
     std::vector<std::unique_ptr<Sphere>> spheres;
     std::vector<Hitable*> hitables;
@@ -228,6 +231,7 @@ void executeSection(int start, int end, uint8_t* imageData)
             imageData[counter++] = uint8_t(output.b);
         }
     }
+    --g_threadsRunning;
 }
 
 int main()
@@ -268,15 +272,16 @@ int main()
         auto currentTime = std::chrono::high_resolution_clock::now();
         auto time = currentTime - startTime;
         float secondsPassed = static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(time).count());
-        int eta = static_cast<int>(((1.0f / percentage) * secondsPassed) - secondsPassed);
+        float eta = (1.0f / percentage) * secondsPassed;
+        eta -= secondsPassed;
+        eta *= log2f(static_cast<float>(g_threadsRunning + 1));
 
-        std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "% completed, approximately " << eta << " seconds left " << std::flush;
+        std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "% completed, elapsed " << secondsPassed << "s, remaining " << static_cast<int>(eta) << "s, threads " << g_threadsRunning << "   " << std::flush;
 
         if (currentProgress == totalProgress)
         {
             break;
         }
-
         currentProgress = 0;
     }
     std::cout << "\n";
