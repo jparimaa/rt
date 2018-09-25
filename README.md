@@ -17,7 +17,7 @@ Configure with CMake and build, e.g. `cmake . && make`
 ## Submodules
 
 - _glm 0.9.9.1_ for vector math
-- _stb_ for writing the output image)
+- _stb_ for reading and writing images
 
 ## Screenshots
 
