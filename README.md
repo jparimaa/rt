@@ -6,6 +6,7 @@ A small demo for ray-tracing.
 - Depth of field
 - Multi-threaded
 - Bounding volumen hierarchy with AABB
+- Image textures
 
 ## Clone and build
 
@@ -20,4 +21,4 @@ Configure with CMake and build, e.g. `cmake . && make`
 
 ## Screenshots
 
-![1](images/1.png?raw=true "1")
+![output](output/output.png?raw=true "output")

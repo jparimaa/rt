@@ -4,6 +4,8 @@
 #include "AABB.h"
 #include "Ray.h"
 
+#include <glm/glm.hpp>
+
 #include <vector>
 
 class HitableList : public Hitable
@@ -12,6 +14,7 @@ public:
     virtual ~HitableList();
     virtual bool hit(const Ray& r, float min, float max, Hit& hit) const;
     virtual bool getBoundingBox(AABB& box);
+    virtual glm::vec2 getUV(glm::vec3 p) const;
 
     template<typename T, typename... Args>
     T* addHitable(Args... args)

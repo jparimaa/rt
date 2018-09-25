@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "Material.h"
 #include "BVHNode.h"
+#include "Texture.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -38,6 +39,7 @@ struct SphereData
     glm::vec3 color;
     float fuzziness;
     float refractionIndex;
+    std::string texture;
 };
 
 const int c_width = 640;
@@ -50,7 +52,7 @@ const float c_maxDistance = std::numeric_limits<float>::max();
 const glm::vec3 c_position(0.0f, 2.5f, 0.0f);
 const glm::vec3 c_lookAt(0.0f, 0.0f, -10.0f);
 const glm::vec3 c_worldUp(0.0f, 1.0f, 0.0f);
-const float c_fov = glm::half_pi<float>() / 2.0f;
+const float c_fov = glm::quarter_pi<float>();
 const float c_aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
 const float c_aperture = 0.10f;
 const float c_focusDistance = glm::distance(c_lookAt, c_position);
@@ -72,7 +74,8 @@ void createSphereDataset()
         MaterialType::Lambertian,
         {0.8f, 0.8f, 0.8f},
         0.0f,
-        0.0f};
+        0.0f,
+        ""};
 
     SphereData red{
         {-1.3f, 1.0f, -11.5f},
@@ -80,28 +83,41 @@ void createSphereDataset()
         MaterialType::Lambertian,
         {0.8f, 0.3f, 0.3f},
         0.0f,
-        0.0f};
+        0.0f,
+        ""};
 
     SphereData water{
-        {0.0f, 1.0f, -9.0f},
+        {1.3f, 1.0f, -6.5f},
         1.0f,
         MaterialType::Refractive,
         {0.0f, 0.0f, 0.0f},
         0.0f,
-        1.5f};
+        1.5f,
+        ""};
 
     SphereData metal{
-        {1.3f, 1.0f, -6.5f},
+        {0.0f, 1.0f, -9.0f},
         1.0f,
         MaterialType::Reflective,
         {0.7f, 0.6f, 0.5f},
         0.0f,
-        0.0f};
+        0.0f,
+        ""};
+
+    SphereData earth{
+        {-2.0f, 1.0f, -6.5f},
+        1.0f,
+        MaterialType::Lambertian,
+        {1.0f, 1.0f, 1.0f},
+        0.0f,
+        0.0f,
+        "../images/earth.jpg"};
 
     g_sphereDataset.push_back(floor);
     g_sphereDataset.push_back(red);
     g_sphereDataset.push_back(water);
     g_sphereDataset.push_back(metal);
+    g_sphereDataset.push_back(earth);
 
     for (int i = 0; i < c_numBalls; ++i)
     {
@@ -178,13 +194,23 @@ void executeSection(int start, int end, uint8_t* imageData)
     ++g_threadsRunning;
     std::vector<std::unique_ptr<Material>> materials;
     std::vector<std::unique_ptr<Sphere>> spheres;
+    std::vector<Texture> textures;
     std::vector<Hitable*> hitables;
     for (const SphereData& data : g_sphereDataset)
     {
         std::unique_ptr<Material> material;
         if (data.type == MaterialType::Lambertian)
         {
-            material.reset(new Lambertian(data.color));
+            if (!data.texture.empty())
+            {
+                textures.resize(textures.size() + 1);
+                textures.back().load(data.texture);
+                material.reset(new Lambertian(data.color, &textures.back()));
+            }
+            else
+            {
+                material.reset(new Lambertian(data.color));
+            }
         }
         else if (data.type == MaterialType::Reflective)
         {

@@ -53,3 +53,8 @@ bool HitableList::getBoundingBox(AABB& box)
     }
     return true;
 }
+
+glm::vec2 HitableList::getUV(glm::vec3 p) const
+{
+    return glm::vec2(0.0f);
+}

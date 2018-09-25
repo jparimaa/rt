@@ -2,6 +2,7 @@
 
 #include "Ray.h"
 #include "Hitable.h"
+#include "Texture.h"
 
 #include <glm/glm.hpp>
 
@@ -14,11 +15,12 @@ public:
 class Lambertian : public Material
 {
 public:
-    Lambertian(glm::vec3 albedo);
+    Lambertian(glm::vec3 albedo, Texture* texture = nullptr);
     virtual bool scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const;
 
 private:
     glm::vec3 m_albedo;
+    Texture* m_texture = nullptr;
 };
 
 class Reflective : public Material

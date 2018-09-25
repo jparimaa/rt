@@ -1,8 +1,9 @@
 #include "Material.h"
 #include "Common.h"
 
-Lambertian::Lambertian(glm::vec3 albedo) :
-    m_albedo(albedo)
+Lambertian::Lambertian(glm::vec3 albedo, Texture* texture) :
+    m_albedo(albedo),
+    m_texture(texture)
 {
 }
 
@@ -11,6 +12,11 @@ bool Lambertian::scatter(const Ray& /*incoming*/, const Hit& hit, glm::vec3& att
     glm::vec3 target = hit.p + hit.normal + randomInUnitSphere();
     outgoing = Ray(hit.p, target - hit.p);
     attenuation = m_albedo;
+    if (m_texture != nullptr)
+    {
+        glm::vec2 uv = hit.hitable->getUV(hit.p);
+        attenuation *= m_texture->getColor(uv);
+    }
     return true;
 }
 
