@@ -1,6 +1,11 @@
 #include "Material.h"
 #include "Common.h"
 
+glm::vec3 Material::emit() const
+{
+    return glm::vec3(0.0f);
+}
+
 Lambertian::Lambertian(glm::vec3 albedo, Texture* texture) :
     m_albedo(albedo),
     m_texture(texture)
@@ -84,4 +89,19 @@ bool Refractive::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenua
         outgoing = Ray(hit.p, reflected);
     }
     return true;
+}
+
+DiffuseLight::DiffuseLight(glm::vec3 color) :
+    m_color(color)
+{
+}
+
+bool DiffuseLight::scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const
+{
+    return false;
+}
+
+glm::vec3 DiffuseLight::emit() const
+{
+    return m_color;
 }

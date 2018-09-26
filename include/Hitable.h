@@ -23,5 +23,5 @@ public:
     virtual ~Hitable(){};
     virtual bool hit(const Ray& r, float min, float max, Hit& hit) const = 0;
     virtual bool getBoundingBox(AABB& box) = 0;
-    virtual glm::vec2 getUV(glm::vec3 p) const = 0;
+    virtual glm::vec2 getUV(glm::vec3 p) const;
 };

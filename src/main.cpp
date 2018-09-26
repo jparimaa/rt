@@ -29,6 +29,7 @@ enum class MaterialType
     Lambertian,
     Refractive,
     Reflective,
+    DiffuseLight,
 };
 
 struct SphereData
@@ -42,11 +43,11 @@ struct SphereData
     std::string texture;
 };
 
-const int c_width = 640;
-const int c_height = 480;
-const int c_numSamples = 150;
-const int c_maxDepth = 25;
-const int c_numThreads = 4;
+const int c_width = 400;
+const int c_height = 300;
+const int c_numSamples = 250;
+const int c_maxDepth = 15;
+const int c_numThreads = 6;
 const int c_totalImageSize = c_width * c_height * 3;
 const float c_maxDistance = std::numeric_limits<float>::max();
 const glm::vec3 c_position(0.0f, 2.5f, 0.0f);
@@ -57,7 +58,7 @@ const float c_aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_h
 const float c_aperture = 0.10f;
 const float c_focusDistance = glm::distance(c_lookAt, c_position);
 const Camera c_camera(c_position, c_lookAt, c_worldUp, c_fov, c_aspectRatio, c_aperture, c_focusDistance);
-const int c_numBalls = 300;
+const int c_numBalls = 10;
 
 std::atomic<int> g_threadsRunning = 0;
 std::unordered_map<std::thread::id, int> g_progress;
@@ -113,11 +114,41 @@ void createSphereDataset()
         0.0f,
         "../images/earth.jpg"};
 
+    SphereData light1{
+        {0.0f, 5.0f, -11.0f},
+        1.0f,
+        MaterialType::DiffuseLight,
+        {5.0f, 3.0f, 3.0f},
+        0.0f,
+        0.0f,
+        ""};
+
+    SphereData light2{
+        {3.0f, 5.0f, -7.0f},
+        1.0f,
+        MaterialType::DiffuseLight,
+        {3.0f, 5.0f, 3.0f},
+        0.0f,
+        0.0f,
+        ""};
+
+    SphereData light3{
+        {-3.0f, 5.0f, -7.0f},
+        1.0f,
+        MaterialType::DiffuseLight,
+        {3.0f, 3.0f, 5.0f},
+        0.0f,
+        0.0f,
+        ""};
+
     g_sphereDataset.push_back(floor);
     g_sphereDataset.push_back(red);
     g_sphereDataset.push_back(water);
     g_sphereDataset.push_back(metal);
     g_sphereDataset.push_back(earth);
+    g_sphereDataset.push_back(light1);
+    g_sphereDataset.push_back(light2);
+    g_sphereDataset.push_back(light3);
 
     for (int i = 0; i < c_numBalls; ++i)
     {
@@ -158,19 +189,19 @@ glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
     {
         glm::vec3 attenuation;
         Ray scattered;
+        glm::vec3 emitted = hit.material->emit();
         if (depth < c_maxDepth && hit.material->scatter(ray, hit, attenuation, scattered))
         {
-            return attenuation * calculateColor(scattered, world, ++depth);
+            return emitted + attenuation * calculateColor(scattered, world, ++depth);
         }
         else
         {
-            return glm::vec3(0.0f);
+            return emitted;
         }
     }
     else
     {
-        float t = 0.5f * (glm::normalize(ray.direction()).y + 1.0f);
-        return (1.0f - t) * glm::vec3(1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
+        return glm::vec3(0.1f);
     }
 }
 
@@ -216,9 +247,18 @@ void executeSection(int start, int end, uint8_t* imageData)
         {
             material.reset(new Reflective(data.color, data.fuzziness));
         }
-        else
+        else if (data.type == MaterialType::Refractive)
         {
             material.reset(new Refractive(data.refractionIndex));
+        }
+        else if (data.type == MaterialType::DiffuseLight)
+        {
+            material.reset(new DiffuseLight(data.color));
+        }
+        else
+        {
+            std::cerr << "ERROR: Invalid material type\n";
+            return;
         }
         materials.push_back(std::move(material));
         std::unique_ptr<Sphere> sphere(new Sphere(data.position, data.radius, materials.back().get()));
@@ -250,7 +290,7 @@ void executeSection(int start, int end, uint8_t* imageData)
             }
 
             output = output / float(c_numSamples);
-            output = glm::sqrt(output) * 255.9f;
+            output = glm::clamp(glm::sqrt(output) * 255.9f, glm::vec3(0.0f), glm::vec3(255.0f));
 
             imageData[counter++] = uint8_t(output.r);
             imageData[counter++] = uint8_t(output.g);

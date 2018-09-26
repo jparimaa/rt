@@ -2,7 +2,7 @@
 
 A small demo for ray-tracing.
 
-- Different materials such as lambertian, reflective and refractive
+- Different materials such as lambertian, reflective, refractive and emitting (light)
 - Depth of field
 - Multi-threaded
 - Bounding volumen hierarchy with AABB

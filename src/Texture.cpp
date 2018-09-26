@@ -35,8 +35,8 @@ glm::vec3 Texture::getColor(glm::vec2 uv)
     }
     int x = static_cast<int>(uv.x * m_fWidth);
     int y = static_cast<int>(uv.y * m_fHeight);
-    x = std::min(m_width, std::max(0, x));
-    y = std::min(m_height, std::max(0, y));
+    x = std::min(m_width - 1, std::max(0, x));
+    y = std::min(m_height - 1, std::max(0, y));
     int rows = 3 * y * m_width;
     int column = 3 * x;
     float r = static_cast<float>(m_data[rows + column + 0]) / 255.0f;
