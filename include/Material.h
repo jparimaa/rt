@@ -9,6 +9,13 @@
 class Material
 {
 public:
+    enum class Type
+    {
+        Lambertian,
+        Reflective,
+        Refractive,
+        DiffuseLight
+    };
     virtual bool scatter(const Ray& incoming, const Hit& hit, glm::vec3& attenuation, Ray& outgoing) const = 0;
     virtual glm::vec3 emit() const;
 };

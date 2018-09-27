@@ -7,11 +7,12 @@
 #include "Material.h"
 #include "BVHNode.h"
 #include "Texture.h"
+#include "SceneCreator.h"
+#include "Constants.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 
 #include <string>
 #include <cmath>
@@ -24,173 +25,22 @@
 #include <memory>
 #include <atomic>
 
-enum class MaterialType
-{
-    Lambertian,
-    Refractive,
-    Reflective,
-    DiffuseLight,
-};
-
-struct SphereData
-{
-    glm::vec3 position;
-    float radius;
-    MaterialType type;
-    glm::vec3 color;
-    float fuzziness;
-    float refractionIndex;
-    std::string texture;
-};
-
-const int c_width = 400;
-const int c_height = 300;
-const int c_numSamples = 250;
-const int c_maxDepth = 15;
-const int c_numThreads = 6;
-const int c_totalImageSize = c_width * c_height * 3;
-const float c_maxDistance = std::numeric_limits<float>::max();
-const glm::vec3 c_position(0.0f, 2.5f, 0.0f);
-const glm::vec3 c_lookAt(0.0f, 0.0f, -10.0f);
-const glm::vec3 c_worldUp(0.0f, 1.0f, 0.0f);
-const float c_fov = glm::quarter_pi<float>();
-const float c_aspectRatio = static_cast<float>(c_width) / static_cast<float>(c_height);
-const float c_aperture = 0.10f;
-const float c_focusDistance = glm::distance(c_lookAt, c_position);
-const Camera c_camera(c_position, c_lookAt, c_worldUp, c_fov, c_aspectRatio, c_aperture, c_focusDistance);
-const int c_numBalls = 10;
-
 std::atomic<int> g_threadsRunning = 0;
 std::unordered_map<std::thread::id, int> g_progress;
 
 std::default_random_engine g_random;
 std::uniform_real_distribution<float> g_distribution(0.0, 1.0);
-std::vector<SphereData> g_sphereDataset;
-
-void createSphereDataset()
-{
-    SphereData floor{
-        {0.0f, -1000.0f, -10.0f},
-        1000.0f,
-        MaterialType::Lambertian,
-        {0.8f, 0.8f, 0.8f},
-        0.0f,
-        0.0f,
-        ""};
-
-    SphereData red{
-        {-1.3f, 1.0f, -11.5f},
-        1.0f,
-        MaterialType::Lambertian,
-        {0.8f, 0.3f, 0.3f},
-        0.0f,
-        0.0f,
-        ""};
-
-    SphereData water{
-        {1.3f, 1.0f, -6.5f},
-        1.0f,
-        MaterialType::Refractive,
-        {0.0f, 0.0f, 0.0f},
-        0.0f,
-        1.5f,
-        ""};
-
-    SphereData metal{
-        {0.0f, 1.0f, -9.0f},
-        1.0f,
-        MaterialType::Reflective,
-        {0.7f, 0.6f, 0.5f},
-        0.0f,
-        0.0f,
-        ""};
-
-    SphereData earth{
-        {-2.0f, 1.0f, -6.5f},
-        1.0f,
-        MaterialType::Lambertian,
-        {1.0f, 1.0f, 1.0f},
-        0.0f,
-        0.0f,
-        "../images/earth.jpg"};
-
-    SphereData light1{
-        {0.0f, 5.0f, -11.0f},
-        1.0f,
-        MaterialType::DiffuseLight,
-        {5.0f, 3.0f, 3.0f},
-        0.0f,
-        0.0f,
-        ""};
-
-    SphereData light2{
-        {3.0f, 5.0f, -7.0f},
-        1.0f,
-        MaterialType::DiffuseLight,
-        {3.0f, 5.0f, 3.0f},
-        0.0f,
-        0.0f,
-        ""};
-
-    SphereData light3{
-        {-3.0f, 5.0f, -7.0f},
-        1.0f,
-        MaterialType::DiffuseLight,
-        {3.0f, 3.0f, 5.0f},
-        0.0f,
-        0.0f,
-        ""};
-
-    g_sphereDataset.push_back(floor);
-    g_sphereDataset.push_back(red);
-    g_sphereDataset.push_back(water);
-    g_sphereDataset.push_back(metal);
-    g_sphereDataset.push_back(earth);
-    g_sphereDataset.push_back(light1);
-    g_sphereDataset.push_back(light2);
-    g_sphereDataset.push_back(light3);
-
-    for (int i = 0; i < c_numBalls; ++i)
-    {
-        MaterialType t;
-        float p = g_distribution(g_random);
-        if (p < 0.4f)
-        {
-            t = MaterialType::Lambertian;
-        }
-        else if (p < 0.8f)
-        {
-            t = MaterialType::Reflective;
-        }
-        else
-        {
-            t = MaterialType::Refractive;
-        }
-
-        float z = -1.0f - (g_distribution(g_random) * 20.0f);
-        float x = (g_distribution(g_random) - 0.5f) * z * tan(c_fov);
-
-        SphereData s{
-            {x, 0.2f, z},
-            0.2f,
-            t,
-            {g_distribution(g_random), g_distribution(g_random), g_distribution(g_random)},
-            g_distribution(g_random),
-            g_distribution(g_random) * 2.0f};
-
-        g_sphereDataset.push_back(s);
-    }
-}
+std::vector<SceneCreator::SphereData> g_sphereDataset;
 
 glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
 {
     Hit hit;
-    if (world.hit(ray, 0.001f, c_maxDistance, hit))
+    if (world.hit(ray, 0.001f, Constants::maxDistance, hit))
     {
         glm::vec3 attenuation;
         Ray scattered;
         glm::vec3 emitted = hit.material->emit();
-        if (depth < c_maxDepth && hit.material->scatter(ray, hit, attenuation, scattered))
+        if (depth < Constants::maxDepth && hit.material->scatter(ray, hit, attenuation, scattered))
         {
             return emitted + attenuation * calculateColor(scattered, world, ++depth);
         }
@@ -208,7 +58,7 @@ glm::vec3 calculateColor(const Ray& ray, const Hitable& world, int depth)
 glm::vec3 visualizeNormals(const Ray& ray, const Hitable& world)
 {
     Hit hit;
-    if (world.hit(ray, 0.0f, c_maxDistance, hit))
+    if (world.hit(ray, 0.0f, Constants::maxDistance, hit))
     {
         // Clamp between [0..1] since unsigned integers don't like to go negative
         return 0.5f * (glm::vec3(hit.normal.x, hit.normal.y, hit.normal.z) + glm::vec3(1.0f));
@@ -227,10 +77,10 @@ void executeSection(int start, int end, uint8_t* imageData)
     std::vector<std::unique_ptr<Sphere>> spheres;
     std::vector<Texture> textures;
     std::vector<Hitable*> hitables;
-    for (const SphereData& data : g_sphereDataset)
+    for (const SceneCreator::SphereData& data : g_sphereDataset)
     {
         std::unique_ptr<Material> material;
-        if (data.type == MaterialType::Lambertian)
+        if (data.type == Material::Type::Lambertian)
         {
             if (!data.texture.empty())
             {
@@ -243,15 +93,15 @@ void executeSection(int start, int end, uint8_t* imageData)
                 material.reset(new Lambertian(data.color));
             }
         }
-        else if (data.type == MaterialType::Reflective)
+        else if (data.type == Material::Type::Reflective)
         {
             material.reset(new Reflective(data.color, data.fuzziness));
         }
-        else if (data.type == MaterialType::Refractive)
+        else if (data.type == Material::Type::Refractive)
         {
             material.reset(new Refractive(data.refractionIndex));
         }
-        else if (data.type == MaterialType::DiffuseLight)
+        else if (data.type == Material::Type::DiffuseLight)
         {
             material.reset(new DiffuseLight(data.color));
         }
@@ -268,28 +118,28 @@ void executeSection(int start, int end, uint8_t* imageData)
 
     BVHNode world(hitables);
 
-    int counter = start * c_width * 3;
-    int startHeight = c_height - 1 - start;
-    int endHeight = c_height - end;
+    int counter = start * Constants::width * 3;
+    int startHeight = Constants::height - 1 - start;
+    int endHeight = Constants::height - end;
     int progressCounter = 0;
 
     for (int i = startHeight; i >= endHeight; --i)
     {
         ++g_progress[std::this_thread::get_id()];
-        for (int j = 0; j < c_width; ++j)
+        for (int j = 0; j < Constants::width; ++j)
         {
             glm::vec3 output(0.0f);
-            for (int k = 0; k < c_numSamples; ++k)
+            for (int k = 0; k < Constants::numSamples; ++k)
             {
-                float u = float(j + g_distribution(g_random)) / float(c_width);
-                float v = float(i + g_distribution(g_random)) / float(c_height);
-                Ray ray = c_camera.getRay(u, v);
+                float u = float(j + g_distribution(g_random)) / float(Constants::width);
+                float v = float(i + g_distribution(g_random)) / float(Constants::height);
+                Ray ray = Constants::camera.getRay(u, v);
 
                 output += calculateColor(ray, world, 0);
                 //output += visualizeNormals(ray, world);
             }
 
-            output = output / float(c_numSamples);
+            output = output / float(Constants::numSamples);
             output = glm::clamp(glm::sqrt(output) * 255.9f, glm::vec3(0.0f), glm::vec3(255.0f));
 
             imageData[counter++] = uint8_t(output.r);
@@ -302,29 +152,29 @@ void executeSection(int start, int end, uint8_t* imageData)
 
 int main()
 {
-    createSphereDataset();
+    SceneCreator::createSphereDataset(g_sphereDataset, 10);
 
-    std::cout << "Total image size " << (c_totalImageSize / 1000) << " kb\n"
-              << "Threads " << c_numThreads << "\n"
-              << "Samples " << c_numSamples << "\n"
-              << "Max depth " << c_maxDepth << "\n"
+    std::cout << "Total image size " << (Constants::totalImageSize / 1000) << " kb\n"
+              << "Threads " << Constants::numThreads << "\n"
+              << "Samples " << Constants::numSamples << "\n"
+              << "Max depth " << Constants::maxDepth << "\n"
               << "Started running...\n";
 
     auto startTime = std::chrono::high_resolution_clock::now();
-    uint8_t* imageData = (uint8_t*)malloc(c_totalImageSize);
+    uint8_t* imageData = (uint8_t*)malloc(Constants::totalImageSize);
 
-    int remainder = c_height % c_numThreads;
-    int heightPerThread = c_height / c_numThreads;
+    int remainder = Constants::height % Constants::numThreads;
+    int heightPerThread = Constants::height / Constants::numThreads;
     std::vector<std::thread> threads;
-    for (int i = 0; i < c_numThreads; ++i)
+    for (int i = 0; i < Constants::numThreads; ++i)
     {
         int start = i * heightPerThread;
         int end = (i + 1) * heightPerThread;
-        end = i == (c_numThreads - 1) ? end + remainder : end;
+        end = i == (Constants::numThreads - 1) ? end + remainder : end;
         threads.push_back(std::thread(executeSection, start, end, imageData));
     }
 
-    const int totalProgress = c_height;
+    const int totalProgress = Constants::height;
     int currentProgress = 0;
     while (true)
     {
@@ -362,7 +212,7 @@ int main()
     std::cout << "Execution time " << std::chrono::duration_cast<std::chrono::seconds>(time).count() << " seconds\n";
 
     std::string fileName = "output.png";
-    stbi_write_png(fileName.c_str(), c_width, c_height, 3, (void*)imageData, 0);
+    stbi_write_png(fileName.c_str(), Constants::width, Constants::height, 3, (void*)imageData, 0);
     std::cout << "Wrote file " << fileName << "\n";
 
     free((void*)imageData);
