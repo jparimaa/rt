@@ -10,6 +10,7 @@
 #include "SceneCreator.h"
 #include "Constants.h"
 #include "Stopwatch.h"
+#include "Progress.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -27,7 +28,7 @@
 #include <atomic>
 
 std::atomic<int> g_threadsRunning = 0;
-std::unordered_map<std::thread::id, int> g_progress;
+Progress g_progress;
 
 std::default_random_engine g_random;
 std::uniform_real_distribution<float> g_distribution(0.0, 1.0);
@@ -126,7 +127,7 @@ void executeSection(int start, int end, uint8_t* imageData)
 
     for (int i = startHeight; i >= endHeight; --i)
     {
-        ++g_progress[std::this_thread::get_id()];
+        g_progress.increaseProgressForThread(std::this_thread::get_id());
         for (int j = 0; j < Constants::width; ++j)
         {
             glm::vec3 output(0.0f);
@@ -177,17 +178,13 @@ int main()
         threads.push_back(std::thread(executeSection, start, end, imageData));
     }
 
-    const int totalProgress = Constants::height;
-    int currentProgress = 0;
+    g_progress.setTotalProgress(Constants::height);
+
     while (true)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        for (auto& kv : g_progress)
-        {
-            currentProgress += kv.second;
-        }
 
-        float percentage = static_cast<float>(currentProgress) / static_cast<float>(totalProgress);
+        float percentage = g_progress.getProgressPercentage();
         float secondsPassed = static_cast<float>(stopwatch.getTimeSinceStart());
         float eta = (1.0f / percentage) * secondsPassed;
         eta -= secondsPassed;
@@ -195,11 +192,10 @@ int main()
 
         std::cout << "\r" << static_cast<int>(percentage * 100.0f) << "% completed, elapsed " << secondsPassed << "s, remaining " << static_cast<int>(eta) << "s, threads " << g_threadsRunning << "   " << std::flush;
 
-        if (currentProgress == totalProgress)
+        if (g_progress.completed())
         {
             break;
         }
-        currentProgress = 0;
     }
     std::cout << "\n";
 

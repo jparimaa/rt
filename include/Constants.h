@@ -7,11 +7,11 @@
 
 namespace Constants
 {
-const int width = 400;
-const int height = 300;
-const int numSamples = 10;
-const int maxDepth = 5;
-const int numThreads = 6;
+const int width = 640;
+const int height = 480;
+const int numSamples = 300;
+const int maxDepth = 25;
+const int numThreads = 10;
 const int totalImageSize = width * height * 3;
 const float maxDistance = std::numeric_limits<float>::max();
 
