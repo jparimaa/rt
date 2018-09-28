@@ -9,7 +9,7 @@ namespace Constants
 {
 const int width = 400;
 const int height = 300;
-const int numSamples = 1;
+const int numSamples = 10;
 const int maxDepth = 5;
 const int numThreads = 6;
 const int totalImageSize = width * height * 3;

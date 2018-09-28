@@ -9,6 +9,7 @@
 #include "Texture.h"
 #include "SceneCreator.h"
 #include "Constants.h"
+#include "Stopwatch.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -160,7 +161,9 @@ int main()
               << "Max depth " << Constants::maxDepth << "\n"
               << "Started running...\n";
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    Stopwatch stopwatch;
+    stopwatch.start();
+
     uint8_t* imageData = (uint8_t*)malloc(Constants::totalImageSize);
 
     int remainder = Constants::height % Constants::numThreads;
@@ -185,9 +188,7 @@ int main()
         }
 
         float percentage = static_cast<float>(currentProgress) / static_cast<float>(totalProgress);
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        auto time = currentTime - startTime;
-        float secondsPassed = static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(time).count());
+        float secondsPassed = static_cast<float>(stopwatch.getTimeSinceStart());
         float eta = (1.0f / percentage) * secondsPassed;
         eta -= secondsPassed;
         eta *= log2f(static_cast<float>(g_threadsRunning + 1));
@@ -207,9 +208,7 @@ int main()
         t.join();
     }
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto time = endTime - startTime;
-    std::cout << "Execution time " << std::chrono::duration_cast<std::chrono::seconds>(time).count() << " seconds\n";
+    std::cout << "Execution time " << stopwatch.getTimeSinceStart() << " seconds\n";
 
     std::string fileName = "output.png";
     stbi_write_png(fileName.c_str(), Constants::width, Constants::height, 3, (void*)imageData, 0);
