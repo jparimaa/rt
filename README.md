@@ -1,6 +1,6 @@
 # rt
 
-A small demo for ray-tracing.
+A small demo for ray-tracing based on Peter Shirley's book https://github.com/petershirley/raytracinginoneweekend.
 
 - Different materials such as lambertian, reflective, refractive and emitting (light)
 - Depth of field
