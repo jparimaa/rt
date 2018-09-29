@@ -154,7 +154,7 @@ void executeSection(int start, int end, uint8_t* imageData)
 
 int main()
 {
-    SceneCreator::createSphereDataset(g_sphereDataset, 10);
+    SceneCreator::createSphereDataset(g_sphereDataset, 50);
 
     std::cout << "Total image size " << (Constants::totalImageSize / 1000) << " kb\n"
               << "Threads " << Constants::numThreads << "\n"

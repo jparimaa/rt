@@ -21,4 +21,6 @@ Configure with CMake and build, e.g. `cmake . && make`
 
 ## Screenshots
 
-![output](output/output.png?raw=true "output")
+![1](output/1.png?raw=true "1")
+
+![2](output/2.png?raw=true "2")
